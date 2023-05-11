@@ -6,6 +6,19 @@ on:
   pull_request:
     branches: [ "main" ]
 
+
+env:
+  AWS_REGION: us-east-2                       # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPO: rjain15-repo                      # set this to your Amazon ECR repository name
+  CONTAINER_NAME: MY_CONTAINER_NAME           # set this to the name of the container in the
+                                              # containerDefinitions section of your task definition
+                                     
+                                     
+# permission can be added at job level or workflow level    
+permissions:
+      id-token: write   # This is required for requesting the JWT
+      contents: read    # This is required for actions/checkout
+      
 jobs:
 
   build:
@@ -18,25 +31,25 @@ jobs:
       # Check the Dockerfile to build the docker image
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials 
-      # Programmatic authentication to aws
+      - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-              aws-access-key-id: $
-              aws-secret-access-key: $
-              aws-region: $
-
+          role-to-assume: arn:aws:iam::630461943232:role/GitHub-Action-Role
+          role-session-name: samplerolesession
+          aws-region: ${{ env.AWS_REGION }}
+          
+          
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR 
-      # copying the code from repo i.e. Dockerfile, versioning 
-      # the docker image, and pushing it to ECR.
+      - name: Build, tag, and push docker image to Amazon ECR
         env:
-          ECR_REGISTRY: $
-          ECR_REPOSITORY: simple_nodejs_app
-          IMAGE_TAG: nodejs_simple_app
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: ${{ env.ECR_REPO }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG      
+          docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+          docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+    
