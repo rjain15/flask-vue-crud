@@ -10,9 +10,33 @@ jobs:
 
   build:
 
+    name: Build Image # build name
     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    steps: # sequence of tasks to be executed
+      - name: Check out code 
+      # Check the Dockerfile to build the docker image
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials 
+      # Programmatic authentication to aws
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+              aws-access-key-id: $
+              aws-secret-access-key: $
+              aws-region: $
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR 
+      # copying the code from repo i.e. Dockerfile, versioning 
+      # the docker image, and pushing it to ECR.
+        env:
+          ECR_REGISTRY: $
+          ECR_REPOSITORY: simple_nodejs_app
+          IMAGE_TAG: nodejs_simple_app
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG      
